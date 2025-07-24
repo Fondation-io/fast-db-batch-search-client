@@ -23,7 +23,7 @@ export interface QueryRequest {
 }
 
 export interface SearchResult {
-  [key: string]: any; // Dynamic fields based on projection
+  [key: string]: string | number | boolean | null | undefined; // Dynamic fields based on projection
   search_group_hash: string;
   score?: number;
 }
@@ -40,9 +40,9 @@ export interface QueryMetrics {
 
 export interface DataFrameResponse {
   columns: string[];
-  rows: any[][];
+  rows: (string | number | boolean | null)[][];
   row_count: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface QueryResponse {

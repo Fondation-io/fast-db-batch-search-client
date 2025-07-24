@@ -1,6 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import {
-  BatchSearchQuery,
   QueryRequest,
   QueryResponse,
   SearchResult,
@@ -57,7 +56,7 @@ export class BatchSearchClient {
   ): Promise<{
     results: SearchResult[];
     grouped: GroupedResults;
-    metrics?: any;
+    metrics?: Record<string, unknown>;
     totalResults: number;
   }> {
     const query: QueryRequest = {
@@ -92,7 +91,7 @@ export class BatchSearchClient {
         return {
           results: [],
           grouped: {},
-          metrics: response.data.metrics,
+          metrics: response.data.metrics as Record<string, unknown> | undefined,
           totalResults: 0
         };
       }
@@ -107,15 +106,16 @@ export class BatchSearchClient {
         results,
         grouped,
         metrics: {
-          ...response.data.metrics,
+          ...(response.data.metrics || {}),
           client_elapsed_ms: elapsedTime
-        },
+        } as Record<string, unknown>,
         totalResults: results.length
       };
-    } catch (error: any) {
-      if (error.response) {
-        throw new Error(`API Error: ${error.response.data.error || error.response.statusText}`);
-      } else if (error.request) {
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      if (axiosError.response) {
+        throw new Error(`API Error: ${axiosError.response.data?.error || axiosError.response.statusText}`);
+      } else if (axiosError.request) {
         throw new Error('Network error: No response from server');
       } else {
         throw error;
@@ -131,7 +131,7 @@ export class BatchSearchClient {
     return rows.map(row => {
       const obj: SearchResult = { search_group_hash: '' };
       columns.forEach((col, index) => {
-        obj[col] = row[index];
+        obj[col] = row[index] as string | number | boolean | null;
       });
       return obj;
     });
@@ -164,7 +164,7 @@ export class BatchSearchClient {
   ): Promise<{
     results: SearchResult[];
     grouped: GroupedResults;
-    metrics?: any;
+    metrics?: Record<string, unknown>;
     totalResults: number;
   }> {
     return this.batchSearch(
