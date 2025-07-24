@@ -18,7 +18,10 @@
     "prepublishOnly": "npm run build",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "example": "tsx examples/basic-usage.ts"
+    "example": "tsx examples/basic-usage.ts",
+    "docs": "typedoc --out docs src/index.ts",
+    "docs:watch": "typedoc --watch --out docs src/index.ts",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -39,12 +42,21 @@
   },
   "homepage": "https://github.com/fondation-io/fast-db-batch-search-client#readme",
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/release-notes-generator": "^14.0.3",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.0.0",
+    "semantic-release": "^24.2.7",
     "tsx": "^4.0.0",
+    "typedoc": "^0.28.7",
     "typescript": "^5.0.0"
   },
   "dependencies": {
@@ -52,5 +64,14 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }

@@ -1,5 +1,11 @@
 # Fast-DB Batch Search Client
 
+[![npm version](https://img.shields.io/npm/v/@fondation-io/fast-db-batch-search-client.svg)](https://www.npmjs.com/package/@fondation-io/fast-db-batch-search-client)
+[![Build Status](https://github.com/Fondation-io/fast-db-batch-search-client/workflows/CI/badge.svg)](https://github.com/Fondation-io/fast-db-batch-search-client/actions)
+[![npm downloads](https://img.shields.io/npm/dm/@fondation-io/fast-db-batch-search-client.svg)](https://www.npmjs.com/package/@fondation-io/fast-db-batch-search-client)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@fondation-io/fast-db-batch-search-client)](https://bundlephobia.com/package/@fondation-io/fast-db-batch-search-client)
+
 A TypeScript client library for interacting with Fast-DB's batch search API, providing efficient batch queries with support for fuzzy search operations.
 
 ## Features
@@ -56,7 +62,7 @@ import { FastDBBatchSearchClient } from '@fondation-io/fast-db-batch-search-clie
 // Initialize the client
 const client = new FastDBBatchSearchClient({
   baseURL: 'http://localhost:8080',
-  timeout: 30000
+  timeout: 30000,
 });
 
 // Execute a simple batch search
@@ -68,12 +74,12 @@ const results = await client.executeBatchSearch({
         fuzzy: {
           text: 'Harry Potter',
           fields: ['title', 'author'],
-          distance: 2
-        }
+          distance: 2,
+        },
       },
-      limit: 10
-    }
-  ]
+      limit: 10,
+    },
+  ],
 });
 
 console.log(results);
@@ -85,10 +91,10 @@ console.log(results);
 
 ```typescript
 interface ClientConfig {
-  baseURL: string;      // Fast-DB server URL
-  timeout?: number;     // Request timeout in milliseconds (default: 30000)
-  maxRetries?: number;  // Maximum retry attempts (default: 3)
-  retryDelay?: number;  // Delay between retries in ms (default: 1000)
+  baseURL: string; // Fast-DB server URL
+  timeout?: number; // Request timeout in milliseconds (default: 30000)
+  maxRetries?: number; // Maximum retry attempts (default: 3)
+  retryDelay?: number; // Delay between retries in ms (default: 1000)
 }
 ```
 
@@ -118,17 +124,17 @@ const response = await client.executeBatchSearch({
         fuzzy: {
           text: 'laptop',
           fields: ['name', 'description'],
-          distance: 1
-        }
+          distance: 1,
+        },
       },
       limit: 20,
-      offset: 0
-    }
+      offset: 0,
+    },
   ],
   options: {
     timeout: 60000,
-    parallel: true
-  }
+    parallel: true,
+  },
 });
 ```
 
@@ -137,13 +143,10 @@ const response = await client.executeBatchSearch({
 Execute batch search with progress tracking.
 
 ```typescript
-await client.executeBatchSearchWithProgress(
-  request,
-  (progress) => {
-    console.log(`Progress: ${progress.completed}/${progress.total}`);
-    console.log(`Current: ${progress.currentQuery}`);
-  }
-);
+await client.executeBatchSearchWithProgress(request, (progress) => {
+  console.log(`Progress: ${progress.completed}/${progress.total}`);
+  console.log(`Current: ${progress.currentQuery}`);
+});
 ```
 
 ### Query Types
@@ -153,11 +156,11 @@ await client.executeBatchSearchWithProgress(
 ```typescript
 interface FuzzyQuery {
   fuzzy: {
-    text: string;        // Search text
-    fields: string[];    // Fields to search in
-    distance?: number;   // Maximum Levenshtein distance (default: 2)
-    prefix?: boolean;    // Enable prefix matching (default: false)
-  }
+    text: string; // Search text
+    fields: string[]; // Fields to search in
+    distance?: number; // Maximum Levenshtein distance (default: 2)
+    prefix?: boolean; // Enable prefix matching (default: false)
+  };
 }
 ```
 
@@ -166,9 +169,9 @@ interface FuzzyQuery {
 ```typescript
 interface ExactQuery {
   exact: {
-    field: string;       // Field name
-    value: any;          // Exact value to match
-  }
+    field: string; // Field name
+    value: any; // Exact value to match
+  };
 }
 ```
 
@@ -177,11 +180,11 @@ interface ExactQuery {
 ```typescript
 interface RangeQuery {
   range: {
-    field: string;       // Field name
-    min?: any;           // Minimum value
-    max?: any;           // Maximum value
+    field: string; // Field name
+    min?: any; // Minimum value
+    max?: any; // Maximum value
     inclusive?: boolean; // Include boundaries (default: true)
-  }
+  };
 }
 ```
 
@@ -209,9 +212,9 @@ try {
 const client = new FastDBBatchSearchClient({
   baseURL: 'http://localhost:8080',
   headers: {
-    'Authorization': 'Bearer your-token',
-    'X-Custom-Header': 'value'
-  }
+    Authorization: 'Bearer your-token',
+    'X-Custom-Header': 'value',
+  },
 });
 ```
 
@@ -247,19 +250,19 @@ const results = await client.executeBatchSearch({
     {
       collection: 'books',
       query: { fuzzy: { text: 'science', fields: ['title'], distance: 1 } },
-      limit: 5
+      limit: 5,
     },
     {
       collection: 'authors',
       query: { fuzzy: { text: 'Asimov', fields: ['name'], distance: 2 } },
-      limit: 10
+      limit: 10,
     },
     {
       collection: 'products',
       query: { exact: { field: 'category', value: 'electronics' } },
-      limit: 20
-    }
-  ]
+      limit: 20,
+    },
+  ],
 });
 ```
 
@@ -274,21 +277,21 @@ const results = await client.executeBatchSearch({
         fuzzy: {
           text: 'artificial intelligence',
           fields: ['title', 'description'],
-          distance: 2
-        }
+          distance: 2,
+        },
       },
       filters: {
         year: { min: 2020 },
         rating: { min: 4.0 },
-        available: true
+        available: true,
       },
       sort: {
         field: 'rating',
-        order: 'desc'
+        order: 'desc',
       },
-      limit: 50
-    }
-  ]
+      limit: 50,
+    },
+  ],
 });
 ```
 
@@ -344,6 +347,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Documentation
+
+- 📚 [API Documentation](https://fondation-io.github.io/fast-db-batch-search-client/)
+- 🚀 [Advanced Usage Guide](docs/ADVANCED_USAGE.md)
+- 🔄 [Migration Guide](docs/MIGRATION.md)
+- 🤝 [Contributing Guide](CONTRIBUTING.md)
 
 ## Support
 

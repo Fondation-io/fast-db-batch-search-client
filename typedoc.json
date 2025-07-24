@@ -1,0 +1,17 @@
+{
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs",
+  "theme": "default",
+  "name": "Fast-DB Batch Search Client",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "plugin": [],
+  "categorizeByGroup": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/fondation-io/fast-db-batch-search-client",
+    "npm": "https://www.npmjs.com/package/@fondation-io/fast-db-batch-search-client"
+  }
+}

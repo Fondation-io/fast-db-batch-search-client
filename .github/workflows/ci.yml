@@ -37,13 +37,21 @@ jobs:
       env:
         FAST_DB_URL: http://localhost:8080
 
-  publish:
+  release:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -57,7 +65,9 @@ jobs:
     - name: Build
       run: npm run build
     
-    - name: Publish to npm
-      run: npm publish --access public
+    - name: Release
       env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npx semantic-release
