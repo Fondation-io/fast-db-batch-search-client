@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/fondation-io/fast-db-batch-search-client/compare/v1.0.0...v1.0.1) (2025-07-24)
+
+### Bug Fixes
+
+- update GitHub Actions to latest versions ([459f058](https://github.com/fondation-io/fast-db-batch-search-client/commit/459f05845132f742b8ac6f1cb103e5e6a4c9cb3a))
+
 # 1.0.0 (2025-07-24)
 
 ### Bug Fixes
