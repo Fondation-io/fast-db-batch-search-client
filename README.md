@@ -17,13 +17,13 @@ A TypeScript client library for interacting with Fast-DB's batch search API, pro
 
 ```bash
 # Using npm
-npm install @fondation/fast-db-batch-search-client
+npm install @fondation-io/fast-db-batch-search-client
 
 # Using yarn
-yarn add @fondation/fast-db-batch-search-client
+yarn add @fondation-io/fast-db-batch-search-client
 
 # Using pnpm
-pnpm add @fondation/fast-db-batch-search-client
+pnpm add @fondation-io/fast-db-batch-search-client
 ```
 
 ### Git Installation
@@ -51,7 +51,7 @@ npm run build
 ## Quick Start
 
 ```typescript
-import { FastDBBatchSearchClient } from '@fondation/fast-db-batch-search-client';
+import { FastDBBatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
 
 // Initialize the client
 const client = new FastDBBatchSearchClient({
