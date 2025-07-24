@@ -1,0 +1,24 @@
+# Source files
+src/
+test/
+examples/
+
+# Config files
+.eslintrc.js
+.prettierrc
+tsconfig.json
+.gitignore
+.github/
+
+# Development files
+*.log
+.DS_Store
+node_modules/
+coverage/
+.nyc_output/
+
+# Keep only the essentials
+!dist/
+!README.md
+!LICENSE
+!package.json
