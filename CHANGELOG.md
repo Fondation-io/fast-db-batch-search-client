@@ -1,3 +1,15 @@
+# 1.0.0 (2025-07-24)
+
+### Bug Fixes
+
+- add package-lock.json for CI/CD ([0916499](https://github.com/fondation-io/fast-db-batch-search-client/commit/0916499c779ac3f1d28512fbc98df155fe6c55c9))
+- resolve all TypeScript linting errors ([89c615c](https://github.com/fondation-io/fast-db-batch-search-client/commit/89c615cfeec41b480f72b70cf7a32ae4706532a3))
+- update package name to [@fondation-io](https://github.com/fondation-io) scope ([d2fd9ba](https://github.com/fondation-io/fast-db-batch-search-client/commit/d2fd9ba7699619894d4e699c8258f2c62f3581f7))
+
+### Features
+
+- add comprehensive project enhancements ([c1b18c8](https://github.com/fondation-io/fast-db-batch-search-client/commit/c1b18c868f1e214e92dfb65c2388daec74599920))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
