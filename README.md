@@ -57,32 +57,35 @@ npm run build
 ## Quick Start
 
 ```typescript
-import { FastDBBatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
+import { BatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
+// Note: FastDBBatchSearchClient is also available as an alias for backward compatibility
 
 // Initialize the client
-const client = new FastDBBatchSearchClient({
-  baseURL: 'http://localhost:8080',
+const client = new BatchSearchClient({
+  baseUrl: 'http://localhost:8080',
   timeout: 30000,
+  includeMetrics: true,
 });
 
-// Execute a simple batch search
-const results = await client.executeBatchSearch({
-  searches: [
-    {
-      collection: 'books',
-      query: {
-        fuzzy: {
-          text: 'Harry Potter',
-          fields: ['title', 'author'],
-          distance: 2,
-        },
-      },
-      limit: 10,
-    },
+// Search for multiple Harry Potter books by J.K. Rowling
+const results = await client.batchSearch(
+  'books', // table/collection
+  'auteurs', // author field name
+  'J.K. Rowling', // single author to search for
+  'titre', // title field name
+  [
+    // list of titles to search
+    'Harry Potter école sorciers',
+    'Harry Potter chambre secrets',
+    'Harry Potter prisonnier Azkaban',
   ],
-});
+  ['titre', 'auteurs'], // fields to return
+  true, // use fuzzy search
+  5 // max results per title
+);
 
-console.log(results);
+console.log(`Found ${results.totalResults} books`);
+console.log(results.grouped); // Results grouped by search query
 ```
 
 ## Configuration
@@ -90,11 +93,10 @@ console.log(results);
 ### Client Options
 
 ```typescript
-interface ClientConfig {
-  baseURL: string; // Fast-DB server URL
+interface BatchSearchOptions {
+  baseUrl?: string; // Fast-DB server URL (default: 'http://localhost:8080')
   timeout?: number; // Request timeout in milliseconds (default: 30000)
-  maxRetries?: number; // Maximum retry attempts (default: 3)
-  retryDelay?: number; // Delay between retries in ms (default: 1000)
+  includeMetrics?: boolean; // Include performance metrics (default: true)
 }
 ```
 
@@ -111,80 +113,63 @@ FAST_DB_TIMEOUT=30000
 
 ### Main Client
 
-#### `executeBatchSearch(request: BatchSearchRequest): Promise<BatchSearchResponse>`
+#### `batchSearch(table, authorField, authorQuery, titleField, titleQueries, projection?, fuzzy?, resultsPerQuery?)`
 
-Execute multiple search queries in a single batch.
+Search for multiple titles by a single author.
+
+**Parameters:**
+
+- `table` (string): The table/collection to search in (e.g., 'books')
+- `authorField` (string): The field name containing author information
+- `authorQuery` (string): The author to search for
+- `titleField` (string): The field name containing title information
+- `titleQueries` (string[]): Array of titles to search for
+- `projection` (string[]): Fields to return (default: ['*'])
+- `fuzzy` (boolean): Use fuzzy search (default: true)
+- `resultsPerQuery` (number): Maximum results per title (default: 10)
 
 ```typescript
-const response = await client.executeBatchSearch({
-  searches: [
-    {
-      collection: 'products',
-      query: {
-        fuzzy: {
-          text: 'laptop',
-          fields: ['name', 'description'],
-          distance: 1,
-        },
-      },
-      limit: 20,
-      offset: 0,
-    },
-  ],
-  options: {
-    timeout: 60000,
-    parallel: true,
-  },
-});
+const results = await client.batchSearch(
+  'books',
+  'auteurs',
+  'Victor Hugo',
+  'titre',
+  ['Les Misérables', 'Notre-Dame de Paris', 'Les Contemplations'],
+  ['titre', 'auteurs', 'annee'],
+  true,
+  3
+);
 ```
 
-#### `executeBatchSearchWithProgress(request, onProgress): Promise<BatchSearchResponse>`
+#### `searchBookSeries(author, seriesTitles, maxPerTitle?)`
 
-Execute batch search with progress tracking.
+Convenience method for searching book series by author.
 
 ```typescript
-await client.executeBatchSearchWithProgress(request, (progress) => {
-  console.log(`Progress: ${progress.completed}/${progress.total}`);
-  console.log(`Current: ${progress.currentQuery}`);
-});
+const results = await client.searchBookSeries(
+  'J.R.R. Tolkien',
+  ['The Hobbit', 'The Lord of the Rings', 'The Silmarillion'],
+  5
+);
 ```
 
-### Query Types
-
-#### Fuzzy Search Query
+### Response Structure
 
 ```typescript
-interface FuzzyQuery {
-  fuzzy: {
-    text: string; // Search text
-    fields: string[]; // Fields to search in
-    distance?: number; // Maximum Levenshtein distance (default: 2)
-    prefix?: boolean; // Enable prefix matching (default: false)
-  };
+interface BatchSearchResponse {
+  results: SearchResult[]; // Flat array of all results
+  grouped: GroupedResults; // Results grouped by title query
+  metrics?: Record<string, unknown>; // Performance metrics
+  totalResults: number; // Total number of results found
 }
-```
 
-#### Exact Search Query
-
-```typescript
-interface ExactQuery {
-  exact: {
-    field: string; // Field name
-    value: any; // Exact value to match
-  };
+interface SearchResult {
+  search_group_hash: string; // Hash identifying which title query this result belongs to
+  [key: string]: any; // Dynamic fields based on projection
 }
-```
 
-#### Range Query
-
-```typescript
-interface RangeQuery {
-  range: {
-    field: string; // Field name
-    min?: any; // Minimum value
-    max?: any; // Maximum value
-    inclusive?: boolean; // Include boundaries (default: true)
-  };
+interface GroupedResults {
+  [hash: string]: SearchResult[]; // Results grouped by search_group_hash
 }
 ```
 
@@ -194,105 +179,72 @@ interface RangeQuery {
 
 ```typescript
 try {
-  const results = await client.executeBatchSearch(request);
+  const results = await client.batchSearch(
+    'books',
+    'auteurs',
+    'Unknown Author',
+    'titre',
+    ['Some Title'],
+    ['titre'],
+    true,
+    5
+  );
 } catch (error) {
-  if (error.code === 'TIMEOUT') {
-    console.error('Request timed out');
-  } else if (error.code === 'NETWORK_ERROR') {
-    console.error('Network error:', error.message);
-  } else {
-    console.error('Unexpected error:', error);
+  console.error('Search failed:', error.message);
+  // Handle specific error cases
+  if (error.message.includes('Network error')) {
+    console.error('Server is unreachable');
+  } else if (error.message.includes('API Error')) {
+    console.error('Server returned an error');
   }
 }
 ```
 
-### Custom Headers
-
-```typescript
-const client = new FastDBBatchSearchClient({
-  baseURL: 'http://localhost:8080',
-  headers: {
-    Authorization: 'Bearer your-token',
-    'X-Custom-Header': 'value',
-  },
-});
-```
-
-### Streaming Large Results
-
-For very large result sets, use streaming:
-
-```typescript
-const stream = await client.streamBatchSearch({
-  searches: [...],
-  options: {
-    streamResults: true,
-    chunkSize: 1000
-  }
-});
-
-stream.on('data', (chunk) => {
-  console.log('Received chunk:', chunk);
-});
-
-stream.on('end', () => {
-  console.log('Stream completed');
-});
-```
-
 ## Examples
 
-### Search Multiple Collections
+### Search for Multiple Books by One Author
 
 ```typescript
-const results = await client.executeBatchSearch({
-  searches: [
-    {
-      collection: 'books',
-      query: { fuzzy: { text: 'science', fields: ['title'], distance: 1 } },
-      limit: 5,
-    },
-    {
-      collection: 'authors',
-      query: { fuzzy: { text: 'Asimov', fields: ['name'], distance: 2 } },
-      limit: 10,
-    },
-    {
-      collection: 'products',
-      query: { exact: { field: 'category', value: 'electronics' } },
-      limit: 20,
-    },
+// Search for Harry Potter books by J.K. Rowling
+const harryPotterResults = await client.batchSearch(
+  'books',
+  'auteurs',
+  'J.K. Rowling',
+  'titre',
+  [
+    "Harry Potter and the Philosopher's Stone",
+    'Harry Potter and the Chamber of Secrets',
+    'Harry Potter and the Prisoner of Azkaban',
+    'Harry Potter and the Goblet of Fire',
+    'Harry Potter and the Order of the Phoenix',
+    'Harry Potter and the Half-Blood Prince',
+    'Harry Potter and the Deathly Hallows',
   ],
-});
+  ['titre', 'auteurs', 'annee', 'isbn'],
+  true, // fuzzy search
+  3 // max 3 results per title
+);
+
+// Process grouped results
+for (const [hash, books] of Object.entries(harryPotterResults.grouped)) {
+  console.log(`\nGroup ${hash}:`);
+  books.forEach((book) => {
+    console.log(`- ${book.titre} (${book.annee})`);
+  });
+}
 ```
 
-### Complex Query with Filters
+### Using the Convenience Method
 
 ```typescript
-const results = await client.executeBatchSearch({
-  searches: [
-    {
-      collection: 'books',
-      query: {
-        fuzzy: {
-          text: 'artificial intelligence',
-          fields: ['title', 'description'],
-          distance: 2,
-        },
-      },
-      filters: {
-        year: { min: 2020 },
-        rating: { min: 4.0 },
-        available: true,
-      },
-      sort: {
-        field: 'rating',
-        order: 'desc',
-      },
-      limit: 50,
-    },
-  ],
-});
+// Search for Tolkien's major works
+const tolkienResults = await client.searchBookSeries(
+  'J.R.R. Tolkien',
+  ['The Hobbit', 'The Fellowship of the Ring', 'The Two Towers', 'The Return of the King'],
+  5 // max 5 results per title
+);
+
+console.log(`Found ${tolkienResults.totalResults} books by Tolkien`);
 ```
 
 ## Performance Tips

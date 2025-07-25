@@ -12,25 +12,25 @@ The optimal batch size depends on your dataset and query complexity:
 // For simple queries with small result sets
 const smallBatch = await client.batchSearch(
   'books',
-  'author',
-  'Tolkien',
-  'title',
-  ['Hobbit', 'Lord of the Rings'], // Small batch
-  ['title', 'year'],
+  'auteurs',
+  'J.R.R. Tolkien',
+  'titre',
+  ['The Hobbit', 'The Lord of the Rings'], // Small batch
+  ['titre', 'annee'],
   true,
   5 // Few results per query
 );
 
 // For complex queries with large result sets
 const largeBatch = await client.batchSearch(
-  'products',
-  'category',
-  'electronics',
-  'name',
-  productNames.slice(0, 100), // Limit batch size
-  ['name', 'price', 'stock'],
+  'books',
+  'auteurs',
+  'Stephen King',
+  'titre',
+  titleList.slice(0, 100), // Limit batch size to 100 titles
+  ['titre', 'auteurs', 'annee', 'isbn'],
   true,
-  20
+  2 // Fewer results per title when searching many titles
 );
 ```
 

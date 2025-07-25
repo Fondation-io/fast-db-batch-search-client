@@ -1,85 +1,61 @@
-import { FastDBBatchSearchClient } from '../src';
+import { BatchSearchClient } from '../src';
 
 async function main() {
   // Initialize the client
-  const client = new FastDBBatchSearchClient({
-    baseURL: process.env.FAST_DB_URL || 'http://localhost:8080',
-    timeout: 30000
+  const client = new BatchSearchClient({
+    baseUrl: process.env.FAST_DB_URL || 'http://localhost:8080',
+    timeout: 30000,
+    includeMetrics: true,
   });
 
   try {
-    // Example 1: Simple fuzzy search
-    console.log('Example 1: Simple fuzzy search');
-    const fuzzyResults = await client.executeBatchSearch({
-      searches: [
-        {
-          collection: 'books',
-          query: {
-            fuzzy: {
-              text: 'Harry Potter',
-              fields: ['title'],
-              distance: 2
-            }
-          },
-          limit: 5
-        }
-      ]
-    });
-    console.log('Fuzzy search results:', JSON.stringify(fuzzyResults, null, 2));
-
-    // Example 2: Multiple searches in one batch
-    console.log('\nExample 2: Batch search across multiple collections');
-    const batchResults = await client.executeBatchSearch({
-      searches: [
-        {
-          collection: 'books',
-          query: {
-            fuzzy: {
-              text: 'science fiction',
-              fields: ['title', 'description'],
-              distance: 1
-            }
-          },
-          limit: 3
-        },
-        {
-          collection: 'authors',
-          query: {
-            fuzzy: {
-              text: 'Asimov',
-              fields: ['name'],
-              distance: 2
-            }
-          },
-          limit: 5
-        }
-      ]
-    });
-    console.log('Batch results:', JSON.stringify(batchResults, null, 2));
-
-    // Example 3: Search with progress tracking
-    console.log('\nExample 3: Search with progress tracking');
-    await client.executeBatchSearchWithProgress(
-      {
-        searches: [
-          {
-            collection: 'products',
-            query: {
-              fuzzy: {
-                text: 'laptop',
-                fields: ['name', 'description'],
-                distance: 1
-              }
-            },
-            limit: 10
-          }
-        ]
-      },
-      (progress) => {
-        console.log(`Progress: ${progress.completed}/${progress.total} - ${progress.currentQuery || 'Initializing...'}`);
-      }
+    // Example 1: Simple search for Harry Potter books by J.K. Rowling
+    console.log('Example 1: Search for Harry Potter books by J.K. Rowling');
+    const harryPotterResults = await client.batchSearch(
+      'books', // table
+      'auteurs', // author field
+      'J.K. Rowling', // single author
+      'titre', // title field
+      [
+        // list of titles to search
+        'Harry Potter école sorciers',
+        'Harry Potter chambre secrets',
+        'Harry Potter prisonnier Azkaban',
+      ],
+      ['titre', 'auteurs', 'annee'], // fields to return
+      true, // use fuzzy search
+      5 // max results per title
     );
 
+    console.log(`Found ${harryPotterResults.totalResults} books`);
+    console.log('\nGrouped results:');
+    Object.entries(harryPotterResults.grouped).forEach(([hash, books]) => {
+      console.log(`\nGroup ${hash.substring(0, 8)}...:`);
+      books.forEach((book) => {
+        console.log(`  - ${book.titre} by ${book.auteurs} (${book.annee || 'N/A'})`);
+      });
+    });
+
+    // Example 2: Search for multiple authors using the convenience method
+    console.log('\n\nExample 2: Search for Tolkien books using convenience method');
+    const tolkienResults = await client.searchBookSeries(
+      'J.R.R. Tolkien',
+      ['The Hobbit', 'The Lord of the Rings', 'The Silmarillion'],
+      3
+    );
+
+    console.log(`Found ${tolkienResults.totalResults} books by Tolkien`);
+    if (tolkienResults.metrics) {
+      console.log('Search metrics:', tolkienResults.metrics);
+    }
+
+    // Example 3: Search with minimal parameters
+    console.log('\n\nExample 3: Simple search with defaults');
+    const simpleResults = await client.batchSearch('books', 'auteurs', 'Victor Hugo', 'titre', [
+      'Les Misérables',
+    ]);
+
+    console.log(`Found ${simpleResults.totalResults} results`);
   } catch (error) {
     console.error('Error executing searches:', error);
   }
