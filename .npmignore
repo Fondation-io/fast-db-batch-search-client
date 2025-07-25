@@ -1,14 +1,23 @@
-# Source files
+# Development and source files
 src/
 test/
+tests/
 examples/
+docs/api/
 
 # Config files
 .eslintrc.js
 .prettierrc
 tsconfig.json
-.gitignore
+typedoc.json
+.nvmrc
+.releaserc.json
+
+# Git and GitHub
+.git/
 .github/
+.gitignore
+.husky/
 
 # Development files
 *.log
@@ -16,9 +25,15 @@ tsconfig.json
 node_modules/
 coverage/
 .nyc_output/
+*.tsbuildinfo
 
-# Keep only the essentials
-!dist/
-!README.md
-!LICENSE
-!package.json
+# Documentation source files (keep only compiled docs)
+docs/*.md
+CONTRIBUTING.md
+
+# Keep the compiled output and essential files
+# dist/ folder is NOT ignored (will be included)
+# README.md is NOT ignored (will be included)
+# LICENSE is NOT ignored (will be included)
+# package.json is NOT ignored (will be included)
+# CHANGELOG.md is NOT ignored (will be included)
