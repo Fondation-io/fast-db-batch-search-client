@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/fondation-io/fast-db-batch-search-client/compare/v2.0.0...v2.0.1) (2025-07-25)
+
+### Bug Fixes
+
+- ensure dist folder is included in npm package ([15a4d7c](https://github.com/fondation-io/fast-db-batch-search-client/commit/15a4d7c84bd6d2cde6ef4b31f1b2dc5ae20a2546))
+
 # [2.0.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v1.0.1...v2.0.0) (2025-07-25)
 
 ### Bug Fixes
