@@ -1,3 +1,17 @@
+# [2.0.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v1.0.1...v2.0.0) (2025-07-25)
+
+### Bug Fixes
+
+- correct all examples to match actual BatchSearchClient API ([9289fb7](https://github.com/fondation-io/fast-db-batch-search-client/commit/9289fb7cfc38c99906cc3f014ed80572e43e2fcb))
+
+### BREAKING CHANGES
+
+- The examples now correctly show that batchSearch expects a single author and a list of titles, not multiple independent searches.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
 ## [1.0.1](https://github.com/fondation-io/fast-db-batch-search-client/compare/v1.0.0...v1.0.1) (2025-07-24)
 
 ### Bug Fixes
