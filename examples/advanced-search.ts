@@ -8,7 +8,7 @@ async function advancedSearchExamples() {
   });
 
   try {
-    // Example 1: Large batch search for an author's complete works
+    // Example 1: Large batch search for a node's complete targets
     console.log("Example 1: Search for Stephen King's horror novels");
     const stephenKingTitles = [
       'Carrie',
@@ -47,13 +47,13 @@ async function advancedSearchExamples() {
 
     const kingResults = await client.batchSearch(
       'books',
-      'auteurs',
-      'Stephen King',
-      'titre',
-      stephenKingTitles,
+      'auteurs', // node field
+      'Stephen King', // node query
+      'titre', // target field
+      stephenKingTitles, // target queries
       ['titre', 'auteurs', 'annee', 'genre', 'isbn'],
       true,
-      2 // Limit to 2 results per title to avoid too many results
+      2 // Limit to 2 results per target to avoid too many results
     );
 
     console.log(`Found ${kingResults.totalResults} Stephen King books`);
@@ -111,39 +111,39 @@ async function advancedSearchExamples() {
       }
     });
 
-    // Example 3: Parallel searches for different authors
-    console.log('\n\nExample 3: Parallel searches for multiple authors');
+    // Example 3: Parallel searches for different nodes
+    console.log('\n\nExample 3: Parallel searches for multiple nodes');
 
-    const authorSearches = [
+    const nodeSearches = [
       {
-        author: 'Agatha Christie',
-        titles: ['Murder on the Orient Express', 'Death on the Nile', 'And Then There Were None'],
+        node: 'Agatha Christie',
+        targets: ['Murder on the Orient Express', 'Death on the Nile', 'And Then There Were None'],
       },
       {
-        author: 'Arthur Conan Doyle',
-        titles: ['A Study in Scarlet', 'The Hound of the Baskervilles', 'The Valley of Fear'],
+        node: 'Arthur Conan Doyle',
+        targets: ['A Study in Scarlet', 'The Hound of the Baskervilles', 'The Valley of Fear'],
       },
-      { author: 'Jane Austen', titles: ['Pride and Prejudice', 'Sense and Sensibility', 'Emma'] },
+      { node: 'Jane Austen', targets: ['Pride and Prejudice', 'Sense and Sensibility', 'Emma'] },
     ];
 
     const parallelResults = await Promise.all(
-      authorSearches.map(async ({ author, titles }) => {
+      nodeSearches.map(async ({ node, targets }) => {
         const results = await client.batchSearch(
           'books',
           'auteurs',
-          author,
+          node,
           'titre',
-          titles,
+          targets,
           ['titre', 'auteurs', 'annee'],
           true,
           3
         );
-        return { author, results };
+        return { node, results };
       })
     );
 
-    parallelResults.forEach(({ author, results }) => {
-      console.log(`\n${author}: Found ${results.totalResults} books`);
+    parallelResults.forEach(({ node, results }) => {
+      console.log(`\n${node}: Found ${results.totalResults} books`);
       Object.values(results.grouped)
         .flat()
         .forEach((book) => {
@@ -151,23 +151,23 @@ async function advancedSearchExamples() {
         });
     });
 
-    // Example 4: Error handling for non-existent author
+    // Example 4: Error handling for non-existent node
     console.log('\n\nExample 4: Error handling and empty results');
     try {
       const noResults = await client.batchSearch(
         'books',
         'auteurs',
-        'Non Existent Author XYZ123',
+        'Non Existent Node XYZ123',
         'titre',
-        ['Some Random Title'],
+        ['Some Random Target'],
         ['titre', 'auteurs'],
         true,
         10
       );
 
-      console.log(`Results for non-existent author: ${noResults.totalResults}`);
+      console.log(`Results for non-existent node: ${noResults.totalResults}`);
       if (noResults.totalResults === 0) {
-        console.log('As expected, no results found for non-existent author');
+        console.log('As expected, no results found for non-existent node');
       }
     } catch (error: any) {
       console.log('Error handled gracefully:', error.message);

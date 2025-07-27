@@ -70,23 +70,38 @@ const client = new BatchSearchClient({
 // Search for multiple Harry Potter books by J.K. Rowling
 const results = await client.batchSearch(
   'books', // table/collection
-  'auteurs', // author field name
-  'J.K. Rowling', // single author to search for
-  'titre', // title field name
+  'auteurs', // node field (author field name)
+  'J.K. Rowling', // node query (author to search for)
+  'titre', // target field (title field name)
   [
-    // list of titles to search
+    // target queries (list of titles to search)
     'Harry Potter école sorciers',
     'Harry Potter chambre secrets',
     'Harry Potter prisonnier Azkaban',
   ],
   ['titre', 'auteurs'], // fields to return
   true, // use fuzzy search
-  5 // max results per title
+  5 // max results per target
 );
 
 console.log(`Found ${results.totalResults} books`);
 console.log(results.grouped); // Results grouped by search query
 ```
+
+## Conceptual Model: Node-Target Relationships
+
+The batch search API uses a generic **node-target** model that can represent various relationships:
+
+- **Node**: The common element that groups related items (e.g., author, category, parent)
+- **Target**: The specific items being searched within that group (e.g., titles, products, children)
+
+This model supports many use cases:
+
+- Books by an author: node=author, targets=book titles
+- Products in a category: node=category, targets=product names
+- Children of a parent entity: node=parent_id, targets=child names
+- Tracks by an artist: node=artist, targets=track titles
+- Items with a common tag: node=tag, targets=item names
 
 ## Configuration
 
@@ -113,42 +128,73 @@ FAST_DB_TIMEOUT=30000
 
 ### Main Client
 
-#### `batchSearch(table, authorField, authorQuery, titleField, titleQueries, projection?, fuzzy?, resultsPerQuery?)`
+#### `batchSearch(table, nodeField, nodeQuery, targetField, targetQueries, projection?, fuzzy?, resultsPerQuery?)`
 
-Search for multiple titles by a single author.
+Search for multiple targets related to a single node.
 
 **Parameters:**
 
 - `table` (string): The table/collection to search in (e.g., 'books')
-- `authorField` (string): The field name containing author information
-- `authorQuery` (string): The author to search for
-- `titleField` (string): The field name containing title information
-- `titleQueries` (string[]): Array of titles to search for
+- `nodeField` (string): The field name containing node information (e.g., author, category, parent)
+- `nodeQuery` (string): The node value to search for
+- `targetField` (string): The field name containing target information (e.g., title, name, child)
+- `targetQueries` (string[]): Array of target values to search for
 - `projection` (string[]): Fields to return (default: ['*'])
 - `fuzzy` (boolean): Use fuzzy search (default: true)
-- `resultsPerQuery` (number): Maximum results per title (default: 10)
+- `resultsPerQuery` (number): Maximum results per target (default: 10)
 
 ```typescript
-const results = await client.batchSearch(
+// Example: Search for books by author
+const bookResults = await client.batchSearch(
   'books',
-  'auteurs',
-  'Victor Hugo',
-  'titre',
-  ['Les Misérables', 'Notre-Dame de Paris', 'Les Contemplations'],
+  'auteurs', // node field
+  'Victor Hugo', // node query
+  'titre', // target field
+  ['Les Misérables', 'Notre-Dame de Paris', 'Les Contemplations'], // target queries
   ['titre', 'auteurs', 'annee'],
   true,
   3
 );
+
+// Example: Search for products by category
+const productResults = await client.batchSearch(
+  'products',
+  'category', // node field
+  'Electronics', // node query
+  'product_name', // target field
+  ['iPhone', 'MacBook', 'AirPods'], // target queries
+  ['product_name', 'price', 'brand'],
+  true,
+  5
+);
 ```
 
-#### `searchBookSeries(author, seriesTitles, maxPerTitle?)`
+#### `searchBookSeries(author, seriesTitles, maxPerTitle?)` (Deprecated)
+
+**Deprecated**: Use `searchRelatedItems()` instead.
 
 Convenience method for searching book series by author.
 
+#### `searchRelatedItems(table, nodeField, nodeValue, targetField, targetValues, projection?, maxPerTarget?)`
+
+Generic method for searching related items by a common node.
+
 ```typescript
+// Deprecated method (for backward compatibility)
 const results = await client.searchBookSeries(
   'J.R.R. Tolkien',
   ['The Hobbit', 'The Lord of the Rings', 'The Silmarillion'],
+  5
+);
+
+// Recommended: Use the generic method
+const results = await client.searchRelatedItems(
+  'books',
+  'auteurs',
+  'J.R.R. Tolkien',
+  'titre',
+  ['The Hobbit', 'The Lord of the Rings', 'The Silmarillion'],
+  ['titre', 'auteurs', 'annee'],
   5
 );
 ```

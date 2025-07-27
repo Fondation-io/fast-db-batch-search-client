@@ -3,10 +3,10 @@
  */
 
 export interface BatchSearchQuery {
-  $author_field: string;
-  $author_query: string;
-  $title_field: string;
-  $title_queries: string[];
+  $node_field: string;
+  $node_query: string;
+  $target_field: string;
+  $target_queries: string[];
   $fuzzy?: boolean;
   $results_per_query?: number;
 }

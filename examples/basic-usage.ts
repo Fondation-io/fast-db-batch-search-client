@@ -13,18 +13,18 @@ async function main() {
     console.log('Example 1: Search for Harry Potter books by J.K. Rowling');
     const harryPotterResults = await client.batchSearch(
       'books', // table
-      'auteurs', // author field
-      'J.K. Rowling', // single author
-      'titre', // title field
+      'auteurs', // node field (author)
+      'J.K. Rowling', // node query (single author)
+      'titre', // target field (title)
       [
-        // list of titles to search
+        // list of target queries (titles to search)
         'Harry Potter école sorciers',
         'Harry Potter chambre secrets',
         'Harry Potter prisonnier Azkaban',
       ],
       ['titre', 'auteurs', 'annee'], // fields to return
       true, // use fuzzy search
-      5 // max results per title
+      5 // max results per target
     );
 
     console.log(`Found ${harryPotterResults.totalResults} books`);

@@ -5,7 +5,7 @@ import {
   SearchResult,
   BatchSearchOptions,
   GroupedResults,
-  DataFrameResponse
+  DataFrameResponse,
 } from './types';
 
 /**
@@ -16,18 +16,14 @@ export class BatchSearchClient {
   private includeMetrics: boolean;
 
   constructor(options: BatchSearchOptions = {}) {
-    const {
-      baseUrl = 'http://localhost:8080',
-      timeout = 30000,
-      includeMetrics = true
-    } = options;
+    const { baseUrl = 'http://localhost:8080', timeout = 30000, includeMetrics = true } = options;
 
     this.axios = axios.create({
       baseURL: baseUrl,
       timeout: timeout,
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     this.includeMetrics = includeMetrics;
@@ -36,20 +32,20 @@ export class BatchSearchClient {
   /**
    * Execute a batch search query
    * @param table The table/collection to search in
-   * @param authorField The field containing author information
-   * @param authorQuery The author to search for
-   * @param titleField The field containing title information
-   * @param titleQueries Array of title queries to search for
+   * @param nodeField The field containing node information
+   * @param nodeQuery The node to search for
+   * @param targetField The field containing target information
+   * @param targetQueries Array of target queries to search for
    * @param projection Fields to return in results
    * @param fuzzy Whether to use fuzzy search (default: true)
-   * @param resultsPerQuery Maximum results per title query (default: 10)
+   * @param resultsPerQuery Maximum results per target query (default: 10)
    */
   async batchSearch(
     table: string,
-    authorField: string,
-    authorQuery: string,
-    titleField: string,
-    titleQueries: string[],
+    nodeField: string,
+    nodeQuery: string,
+    targetField: string,
+    targetQueries: string[],
     projection: string[] = ['*'],
     fuzzy: boolean = true,
     resultsPerQuery: number = 10
@@ -65,16 +61,16 @@ export class BatchSearchClient {
         $from: table,
         $where: {
           $batch: {
-            $author_field: authorField,
-            $author_query: authorQuery,
-            $title_field: titleField,
-            $title_queries: titleQueries,
+            $node_field: nodeField,
+            $node_query: nodeQuery,
+            $target_field: targetField,
+            $target_queries: targetQueries,
             $fuzzy: fuzzy,
-            $results_per_query: resultsPerQuery
-          }
-        }
+            $results_per_query: resultsPerQuery,
+          },
+        },
       },
-      include_metrics: this.includeMetrics
+      include_metrics: this.includeMetrics,
     };
 
     try {
@@ -92,7 +88,7 @@ export class BatchSearchClient {
           results: [],
           grouped: {},
           metrics: response.data.metrics as Record<string, unknown> | undefined,
-          totalResults: 0
+          totalResults: 0,
         };
       }
 
@@ -107,14 +103,16 @@ export class BatchSearchClient {
         grouped,
         metrics: {
           ...(response.data.metrics || {}),
-          client_elapsed_ms: elapsedTime
+          client_elapsed_ms: elapsedTime,
         } as Record<string, unknown>,
-        totalResults: results.length
+        totalResults: results.length,
       };
     } catch (error) {
       const axiosError = error as AxiosError<{ error?: string }>;
       if (axiosError.response) {
-        throw new Error(`API Error: ${axiosError.response.data?.error || axiosError.response.statusText}`);
+        throw new Error(
+          `API Error: ${axiosError.response.data?.error || axiosError.response.statusText}`
+        );
       } else if (axiosError.request) {
         throw new Error('Network error: No response from server');
       } else {
@@ -128,7 +126,7 @@ export class BatchSearchClient {
    */
   private dataFrameToObjects(data: DataFrameResponse): SearchResult[] {
     const { columns, rows } = data;
-    return rows.map(row => {
+    return rows.map((row) => {
       const obj: SearchResult = { search_group_hash: '' };
       columns.forEach((col, index) => {
         obj[col] = row[index] as string | number | boolean | null;
@@ -142,7 +140,7 @@ export class BatchSearchClient {
    */
   private groupResultsByHash(results: SearchResult[]): GroupedResults {
     const groups: GroupedResults = {};
-    
+
     for (const result of results) {
       const hash = result.search_group_hash || 'unknown';
       if (!groups[hash]) {
@@ -156,6 +154,7 @@ export class BatchSearchClient {
 
   /**
    * Convenience method for searching book series by author
+   * @deprecated Use searchRelatedItems instead
    */
   async searchBookSeries(
     author: string,
@@ -176,6 +175,35 @@ export class BatchSearchClient {
       ['titre', 'auteurs'],
       true,
       maxPerTitle
+    );
+  }
+
+  /**
+   * Generic method for searching related items by a common node
+   */
+  async searchRelatedItems(
+    table: string,
+    nodeField: string,
+    nodeValue: string,
+    targetField: string,
+    targetValues: string[],
+    projection?: string[],
+    maxPerTarget: number = 3
+  ): Promise<{
+    results: SearchResult[];
+    grouped: GroupedResults;
+    metrics?: Record<string, unknown>;
+    totalResults: number;
+  }> {
+    return this.batchSearch(
+      table,
+      nodeField,
+      nodeValue,
+      targetField,
+      targetValues,
+      projection || ['*'],
+      true,
+      maxPerTarget
     );
   }
 
@@ -207,7 +235,7 @@ export class BatchSearchClient {
       totalGroups,
       groupSizes,
       averageGroupSize,
-      emptyGroups
+      emptyGroups,
     };
   }
 }

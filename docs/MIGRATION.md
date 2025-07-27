@@ -1,73 +1,181 @@
 # Migration Guide
 
-This guide helps you migrate between different versions of the Fast-DB Batch Search Client.
+## Migrating from Author/Title to Node/Target API
 
-## Migrating from 0.x to 1.0
+Starting from version 2.0.0, the Fast-DB Batch Search Client uses a more generic vocabulary to support a wider range of use cases beyond just book searches.
 
-Version 1.0 is the initial stable release. If you're using a pre-release version, here are the key changes:
+### Terminology Changes
 
-### Breaking Changes
+| Old Term         | New Term          | Description                                   |
+| ---------------- | ----------------- | --------------------------------------------- |
+| `$author_field`  | `$node_field`     | The field containing the grouping element     |
+| `$author_query`  | `$node_query`     | The value to search for in the node field     |
+| `$title_field`   | `$target_field`   | The field containing the items to search      |
+| `$title_queries` | `$target_queries` | Array of values to search in the target field |
 
-1. **Import Path Changes**
+### API Changes
 
-   ```typescript
-   // Before
-   import { BatchSearchClient } from 'fast-db-batch-search-client';
+#### BatchSearchQuery Interface
 
-   // After
-   import { BatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
+**Before (v1.x):**
+
+```typescript
+interface BatchSearchQuery {
+  $author_field: string;
+  $author_query: string;
+  $title_field: string;
+  $title_queries: string[];
+  $fuzzy?: boolean;
+  $results_per_query?: number;
+}
+```
+
+**After (v2.0+):**
+
+```typescript
+interface BatchSearchQuery {
+  $node_field: string;
+  $node_query: string;
+  $target_field: string;
+  $target_queries: string[];
+  $fuzzy?: boolean;
+  $results_per_query?: number;
+}
+```
+
+#### Client Method Parameters
+
+**Before (v1.x):**
+
+```typescript
+await client.batchSearch(
+  'books',
+  'auteurs', // authorField
+  'Victor Hugo', // authorQuery
+  'titre', // titleField
+  ['Les Misérables'], // titleQueries
+  ['titre', 'auteurs'],
+  true,
+  5
+);
+```
+
+**After (v2.0+):**
+
+```typescript
+await client.batchSearch(
+  'books',
+  'auteurs', // nodeField
+  'Victor Hugo', // nodeQuery
+  'titre', // targetField
+  ['Les Misérables'], // targetQueries
+  ['titre', 'auteurs'],
+  true,
+  5
+);
+```
+
+### New Generic Method
+
+A new generic method `searchRelatedItems()` has been added to make the API more intuitive:
+
+```typescript
+const results = await client.searchRelatedItems(
+  'products',
+  'category', // nodeField
+  'Electronics', // nodeValue
+  'product_name', // targetField
+  ['iPhone', 'MacBook', 'AirPods'], // targetValues
+  ['product_name', 'price', 'brand'],
+  5
+);
+```
+
+### Backward Compatibility
+
+The `searchBookSeries()` method is now deprecated but remains available for backward compatibility:
+
+```typescript
+// Deprecated (but still works)
+await client.searchBookSeries('J.K. Rowling', ['Harry Potter'], 5);
+
+// Recommended
+await client.searchRelatedItems(
+  'books',
+  'auteurs',
+  'J.K. Rowling',
+  'titre',
+  ['Harry Potter'],
+  ['titre', 'auteurs'],
+  5
+);
+```
+
+### Server-Side Changes
+
+The server API has also been updated to use the new terminology. Ensure your Fast-DB server is updated to a compatible version that supports the new field names.
+
+### Migration Steps
+
+1. **Update Client Library**: Install version 2.0.0 or later
+
+   ```bash
+   npm install @fondation-io/fast-db-batch-search-client@^2.0.0
    ```
 
-2. **Constructor Options**
+2. **Update Query Construction**: Replace old field names with new ones in your queries:
+   - `$author_field` → `$node_field`
+   - `$author_query` → `$node_query`
+   - `$title_field` → `$target_field`
+   - `$title_queries` → `$target_queries`
 
-   ```typescript
-   // Before
-   const client = new BatchSearchClient('http://localhost:8080');
+3. **Consider Using Generic Method**: For new code, consider using `searchRelatedItems()` for better clarity
 
-   // After
-   const client = new BatchSearchClient({
-     baseUrl: 'http://localhost:8080',
-     timeout: 30000,
-     includeMetrics: true,
-   });
-   ```
+4. **Test Your Queries**: Ensure all queries work as expected with the new API
 
-3. **Method Signatures**
-   The main `batchSearch` method now has a more consistent parameter order:
-   ```typescript
-   // Parameters order:
-   // table, authorField, authorQuery, titleField, titleQueries, projection, fuzzy, resultsPerQuery
-   ```
+### Examples of Different Use Cases
 
-### New Features in 1.0
+**Products by Category:**
 
-- **Progress Tracking**: New methods for tracking batch operation progress
-- **Type Safety**: Comprehensive TypeScript definitions
-- **Error Handling**: Improved error messages with proper types
-- **Retry Logic**: Automatic retry for failed requests
+```typescript
+await client.batchSearch(
+  'products',
+  'category', // node
+  'Electronics', // node value
+  'name', // target
+  ['iPhone 15', 'Galaxy S24', 'Pixel 8'],
+  ['name', 'price', 'brand'],
+  true,
+  3
+);
+```
 
-### Deprecations
+**Tracks by Artist:**
 
-No deprecations in 1.0 as this is the initial release.
+```typescript
+await client.batchSearch(
+  'tracks',
+  'artist_id', // node
+  '12345', // node value
+  'track_name', // target
+  ['Bohemian Rhapsody', 'We Are The Champions'],
+  ['track_name', 'album', 'duration'],
+  true,
+  5
+);
+```
 
-## Future Versions
+**Child Entities by Parent:**
 
-This section will be updated as new versions are released. We follow semantic versioning:
-
-- **Major versions** (2.0, 3.0, etc.) may include breaking changes
-- **Minor versions** (1.1, 1.2, etc.) add functionality in a backward-compatible manner
-- **Patch versions** (1.0.1, 1.0.2, etc.) include backward-compatible bug fixes
-
-## Version Compatibility
-
-| Client Version | Fast-DB Version | Node.js Version |
-| -------------- | --------------- | --------------- |
-| 1.0.x          | ≥ 0.1.0         | ≥ 16.0.0        |
-
-## Getting Help
-
-If you encounter issues during migration:
-
-1. Check the [CHANGELOG](../CHANGELOG.md) for detailed changes
-2. Review the [examples](../examples) for updated usage patterns
-3. Open an [issue](https://github.com/fondation-io/fast-db-batch-search-client/issues) if you need help
+```typescript
+await client.batchSearch(
+  'entities',
+  'parent_id', // node
+  'ROOT_123', // node value
+  'entity_name', // target
+  ['Config', 'Users', 'Permissions'],
+  ['entity_name', 'entity_type', 'created_at'],
+  true,
+  10
+);
+```
