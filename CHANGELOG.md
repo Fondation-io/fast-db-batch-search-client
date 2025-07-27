@@ -1,3 +1,17 @@
+# [3.0.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v2.0.1...v3.0.0) (2025-07-27)
+
+### Features
+
+- generalize API from author/title to node/target model ([1310a9d](https://github.com/fondation-io/fast-db-batch-search-client/commit/1310a9db59678b2b8ff06372c4d23dd574166d2b))
+
+### BREAKING CHANGES
+
+- API field names have changed from author_field/title_field to node_field/target_field. Server must be updated to support new field names.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
 ## [2.0.1](https://github.com/fondation-io/fast-db-batch-search-client/compare/v2.0.0...v2.0.1) (2025-07-25)
 
 ### Bug Fixes
