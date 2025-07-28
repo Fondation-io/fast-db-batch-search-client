@@ -1,6 +1,6 @@
 {
   "name": "@fondation-io/fast-db-batch-search-client",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "TypeScript client for Fast-DB batch search API with support for fuzzy search",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -6,6 +6,7 @@ import {
   BatchSearchOptions,
   GroupedResults,
   DataFrameResponse,
+  JoinSearchParams,
 } from './types';
 
 /**
@@ -153,6 +154,85 @@ export class BatchSearchClient {
   }
 
   /**
+   * Execute a batch search query with joins across multiple tables
+   * @param params Join search parameters
+   */
+  async batchSearchWithJoins(params: JoinSearchParams): Promise<{
+    results: SearchResult[];
+    grouped: GroupedResults;
+    metrics?: Record<string, unknown>;
+    totalResults: number;
+  }> {
+    const query: QueryRequest = {
+      query: {
+        $select: params.projection || ['*'],
+        $from: params.tables,
+        $join: params.joins,
+        $where: {
+          $batch: {
+            $node_field: params.nodeField,
+            $node_query: params.nodeQuery,
+            $target_field: params.targetField,
+            $target_queries: params.targetQueries,
+            $fuzzy: params.fuzzy !== false,
+            $results_per_query: params.resultsPerQuery || 10,
+          },
+        },
+        $orderBy: params.orderBy,
+        $limit: params.limit,
+      },
+      include_metrics: this.includeMetrics,
+    };
+
+    try {
+      const startTime = Date.now();
+      const response = await this.axios.post<QueryResponse>('/query', query);
+      const elapsedTime = Date.now() - startTime;
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Query failed');
+      }
+
+      const data = response.data.data;
+      if (!data) {
+        return {
+          results: [],
+          grouped: {},
+          metrics: response.data.metrics as Record<string, unknown> | undefined,
+          totalResults: 0,
+        };
+      }
+
+      // Convert DataFrame response to array of objects
+      const results = this.dataFrameToObjects(data);
+
+      // Group results by search_group_hash
+      const grouped = this.groupResultsByHash(results);
+
+      return {
+        results,
+        grouped,
+        metrics: {
+          ...(response.data.metrics || {}),
+          client_elapsed_ms: elapsedTime,
+        } as Record<string, unknown>,
+        totalResults: results.length,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      if (axiosError.response) {
+        throw new Error(
+          `API Error: ${axiosError.response.data?.error || axiosError.response.statusText}`
+        );
+      } else if (axiosError.request) {
+        throw new Error('Network error: No response from server');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Convenience method for searching book series by author
    * @deprecated Use searchRelatedItems instead
    */
@@ -205,6 +285,49 @@ export class BatchSearchClient {
       true,
       maxPerTarget
     );
+  }
+
+  /**
+   * Convenience method for searching albums by artist using joins
+   */
+  async searchAlbumsByArtist(
+    artist: string,
+    albumTitles: string[],
+    maxPerAlbum: number = 3
+  ): Promise<{
+    results: SearchResult[];
+    grouped: GroupedResults;
+    metrics?: Record<string, unknown>;
+    totalResults: number;
+  }> {
+    return this.batchSearchWithJoins({
+      tables: ['id_artists', 'album_artist', 'albums'],
+      joins: [
+        {
+          $type: 'inner',
+          $left: 'id_artists',
+          $right: 'album_artist',
+          $on: ['id_artists.id', 'album_artist.artist_id'],
+        },
+        {
+          $type: 'inner',
+          $left: 'album_artist',
+          $right: 'albums',
+          $on: ['album_artist.cb', 'albums.cb'],
+        },
+      ],
+      nodeField: 'id_artists.artiste',
+      nodeQuery: artist,
+      targetField: 'albums.album',
+      targetQueries: albumTitles,
+      projection: {
+        artist_name: 'artiste',
+        album_title: 'album',
+        release_year: 'street_date',
+      },
+      fuzzy: true,
+      resultsPerQuery: maxPerAlbum,
+    });
   }
 
   /**

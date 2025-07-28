@@ -12,6 +12,7 @@ A TypeScript client library for interacting with Fast-DB's batch search API, pro
 
 - 🚀 **Batch Operations**: Execute multiple search queries in a single request
 - 🔍 **Fuzzy Search**: Built-in support for fuzzy string matching with Levenshtein distance
+- 🔗 **Join Support**: Query across multiple related tables with inner/left/right/full joins
 - 📊 **Progress Tracking**: Real-time progress updates for batch operations
 - 🎯 **Type Safety**: Full TypeScript support with comprehensive type definitions
 - ⚡ **High Performance**: Optimized for handling large datasets
@@ -103,6 +104,15 @@ This model supports many use cases:
 - Tracks by an artist: node=artist, targets=track titles
 - Items with a common tag: node=tag, targets=item names
 
+### Advanced Use Cases with Joins
+
+When data is spread across multiple tables, use `batchSearchWithJoins`:
+
+- **Music Database**: Search albums by artist where artists and albums are in separate tables
+- **E-commerce**: Find products by manufacturer with separate manufacturer and product tables
+- **Library System**: Search books by author with separate author and book tables
+- **Movie Database**: Find movies by director/actor with separate person and movie tables
+
 ## Configuration
 
 ### Client Options
@@ -165,6 +175,82 @@ const productResults = await client.batchSearch(
   ['iPhone', 'MacBook', 'AirPods'], // target queries
   ['product_name', 'price', 'brand'],
   true,
+  5
+);
+```
+
+#### `batchSearchWithJoins(params: JoinSearchParams)`
+
+Execute batch search queries across multiple tables with join support.
+
+**Parameters:**
+
+```typescript
+interface JoinSearchParams {
+  tables: string[]; // Tables to join
+  joins: JoinCondition[]; // Join conditions
+  nodeField: string; // Node field (can include table prefix)
+  nodeQuery: string; // Node value to search
+  targetField: string; // Target field (can include table prefix)
+  targetQueries: string[]; // Target values to search
+  projection?: string[] | Record<string, string>; // Fields to return
+  fuzzy?: boolean; // Use fuzzy search (default: true)
+  resultsPerQuery?: number; // Max results per target (default: 10)
+  orderBy?: Record<string, number>; // Sort order
+  limit?: number; // Total result limit
+}
+
+interface JoinCondition {
+  $type: 'inner' | 'left' | 'right' | 'full';
+  $left: string;
+  $right: string;
+  $on: [string, string];
+}
+```
+
+**Example:**
+
+```typescript
+// Search for Mozart albums with joins
+const mozartAlbums = await client.batchSearchWithJoins({
+  tables: ['id_artists', 'album_artist', 'albums'],
+  joins: [
+    {
+      $type: 'inner',
+      $left: 'id_artists',
+      $right: 'album_artist',
+      $on: ['id_artists.id', 'album_artist.artist_id'],
+    },
+    {
+      $type: 'inner',
+      $left: 'album_artist',
+      $right: 'albums',
+      $on: ['album_artist.cb', 'albums.cb'],
+    },
+  ],
+  nodeField: 'id_artists.artiste',
+  nodeQuery: 'Mozart',
+  targetField: 'albums.album',
+  targetQueries: ['Symphony 40', 'Symphony 41', 'Requiem'],
+  projection: {
+    artist_name: 'artiste',
+    album_title: 'album',
+    release_year: 'street_date',
+  },
+  fuzzy: true,
+  resultsPerQuery: 5,
+  orderBy: { release_year: -1 },
+});
+```
+
+#### `searchAlbumsByArtist(artist, albumTitles, maxPerAlbum?)`
+
+Convenience method for searching albums by artist using joins.
+
+```typescript
+const albums = await client.searchAlbumsByArtist(
+  'Mozart',
+  ['Symphony 40', 'Symphony 41', 'Requiem'],
   5
 );
 ```

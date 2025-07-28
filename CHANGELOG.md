@@ -1,3 +1,23 @@
+# [3.1.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v3.0.0...v3.1.0) (2025-07-28)
+
+### Features
+
+- add support for multi-table joins in batch search queries
+- add `batchSearchWithJoins()` method for querying across related tables
+- add `searchAlbumsByArtist()` convenience method for music databases
+- support for inner, left, right, and full joins
+- support for field projection with aliasing in join queries
+- add comprehensive examples and tests for join functionality
+
+### Documentation
+
+- update README with join search examples and API documentation
+- add advanced use cases section for multi-table scenarios
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
 # [3.0.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v2.0.1...v3.0.0) (2025-07-27)
 
 ### Features

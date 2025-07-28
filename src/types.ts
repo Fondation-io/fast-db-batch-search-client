@@ -11,13 +11,23 @@ export interface BatchSearchQuery {
   $results_per_query?: number;
 }
 
+export interface JoinCondition {
+  $type: 'inner' | 'left' | 'right' | 'full';
+  $left: string;
+  $right: string;
+  $on: [string, string];
+}
+
 export interface QueryRequest {
   query: {
-    $select: string[];
-    $from: string;
+    $select: string[] | Record<string, string>;
+    $from: string | string[];
+    $join?: JoinCondition[];
     $where: {
       $batch: BatchSearchQuery;
     };
+    $orderBy?: Record<string, number>;
+    $limit?: number;
   };
   include_metrics?: boolean;
 }
@@ -61,4 +71,18 @@ export interface BatchSearchOptions {
 
 export interface GroupedResults {
   [hash: string]: SearchResult[];
+}
+
+export interface JoinSearchParams {
+  tables: string[];
+  joins: JoinCondition[];
+  nodeField: string;
+  nodeQuery: string;
+  targetField: string;
+  targetQueries: string[];
+  projection?: string[] | Record<string, string>;
+  fuzzy?: boolean;
+  resultsPerQuery?: number;
+  orderBy?: Record<string, number>;
+  limit?: number;
 }
