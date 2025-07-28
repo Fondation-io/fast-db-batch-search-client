@@ -1,0 +1,291 @@
+# Fast-DB Batch Search Client - LLM Documentation
+
+## Overview
+Fast-DB Batch Search Client is a TypeScript library for performing efficient batch searches with fuzzy matching support. It allows searching for multiple target items related to a single node (e.g., multiple books by one author).
+
+## Installation
+```bash
+npm install @fondation-io/fast-db-batch-search-client
+```
+
+## Core Concepts
+- **Node**: The common element (e.g., author, category, artist)
+- **Target**: The items to search (e.g., book titles, product names, albums)
+- **Batch Search**: Search multiple targets in one request
+- **Fuzzy Search**: Find approximate matches using Levenshtein distance
+
+## Basic Usage - Batch Search Without Joins
+
+### Import and Initialize
+```typescript
+import { BatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
+
+const client = new BatchSearchClient({
+  baseUrl: 'http://localhost:8080',
+  timeout: 30000,
+  includeMetrics: true
+});
+```
+
+### Simple Batch Search
+Search for multiple books by one author:
+
+```typescript
+const results = await client.batchSearch(
+  'books',                              // table name
+  'auteurs',                            // node field (author field)
+  'J.K. Rowling',                       // node value (single author)
+  'titre',                              // target field (title field)
+  [                                     // target values (multiple titles)
+    'Harry Potter école sorciers',
+    'Harry Potter chambre secrets',
+    'Harry Potter prisonnier Azkaban'
+  ],
+  ['titre', 'auteurs', 'annee'],        // fields to return
+  true,                                 // use fuzzy search
+  5                                     // max results per title
+);
+
+// Response structure
+{
+  results: [                            // Flat array of all results
+    {
+      search_group_hash: "hash1",
+      titre: "Harry Potter à l'école des sorciers",
+      auteurs: "J.K. Rowling",
+      annee: 1997
+    },
+    // ... more results
+  ],
+  grouped: {                            // Results grouped by search query
+    "hash1": [...],                     // Results for first title
+    "hash2": [...],                     // Results for second title
+    "hash3": [...]                      // Results for third title
+  },
+  totalResults: 15,
+  metrics: { /* performance data */ }
+}
+```
+
+### Method Signature
+```typescript
+async batchSearch(
+  table: string,           // Table/collection name
+  nodeField: string,       // Field containing node (e.g., author)
+  nodeQuery: string,       // Single node value to search
+  targetField: string,     // Field containing targets (e.g., titles)
+  targetQueries: string[], // Array of target values to search
+  projection?: string[],   // Fields to return (default: ['*'])
+  fuzzy?: boolean,         // Use fuzzy search (default: true)
+  resultsPerQuery?: number // Max results per target (default: 10)
+)
+```
+
+### Common Use Cases
+
+#### Books by Author
+```typescript
+const books = await client.batchSearch(
+  'books',
+  'auteurs',
+  'Victor Hugo',
+  'titre', 
+  ['Les Misérables', 'Notre-Dame de Paris'],
+  ['titre', 'auteurs', 'annee', 'isbn']
+);
+```
+
+#### Products by Category
+```typescript
+const products = await client.batchSearch(
+  'products',
+  'category',
+  'Electronics',
+  'product_name',
+  ['iPhone 15', 'MacBook Pro', 'AirPods'],
+  ['product_name', 'price', 'brand', 'sku']
+);
+```
+
+#### Movies by Director
+```typescript
+const movies = await client.batchSearch(
+  'movies',
+  'director',
+  'Christopher Nolan',
+  'title',
+  ['Inception', 'Interstellar', 'Tenet'],
+  ['title', 'director', 'year', 'rating']
+);
+```
+
+## Advanced Usage - Batch Search With Joins
+
+For data spread across multiple tables, use `batchSearchWithJoins`.
+
+### Join Search Example
+Search for albums by artist across three related tables:
+
+```typescript
+const mozartAlbums = await client.batchSearchWithJoins({
+  // Tables to join
+  tables: ['id_artists', 'album_artist', 'albums'],
+  
+  // Join conditions
+  joins: [
+    {
+      $type: 'inner',
+      $left: 'id_artists',
+      $right: 'album_artist',
+      $on: ['id_artists.id', 'album_artist.artist_id']
+    },
+    {
+      $type: 'inner',
+      $left: 'album_artist',
+      $right: 'albums',
+      $on: ['album_artist.cb', 'albums.cb']
+    }
+  ],
+  
+  // Search parameters
+  nodeField: 'id_artists.artiste',        // Artist name field
+  nodeQuery: 'Mozart',                    // Artist to search
+  targetField: 'albums.album',            // Album title field
+  targetQueries: [                        // Albums to find
+    'Symphony No. 40',
+    'Symphony No. 41',
+    'Requiem'
+  ],
+  
+  // Field projection with aliases
+  projection: {
+    artist_name: 'artiste',
+    album_title: 'album',
+    release_year: 'street_date'
+  },
+  
+  fuzzy: true,
+  resultsPerQuery: 5,
+  orderBy: { release_year: -1 }
+});
+
+// Response has same structure but includes joined data
+```
+
+### Join Types Supported
+- `inner`: Return only matching records from both tables
+- `left`: Return all from left table, matching from right
+- `right`: Return all from right table, matching from left
+- `full`: Return all records from both tables
+
+### Convenience Method for Albums
+```typescript
+const albums = await client.searchAlbumsByArtist(
+  'Beatles',
+  ['Abbey Road', 'Let It Be', 'Revolver'],
+  5
+);
+```
+
+## Query Processing
+
+### Fuzzy Search Behavior
+- When `fuzzy: true`, searches use Levenshtein distance
+- Default distance threshold: 2
+- Matches partial strings and handles typos
+
+### Result Grouping
+- Each target query gets a unique `search_group_hash`
+- Results are automatically grouped by this hash
+- Access flat results via `results` array
+- Access grouped results via `grouped` object
+
+### Performance Optimization
+```typescript
+// Optimize by selecting only needed fields
+const optimized = await client.batchSearch(
+  'large_table',
+  'category',
+  'Books',
+  'title',
+  ['Title1', 'Title2'],
+  ['title', 'price'],    // Only return 2 fields
+  true,
+  3                      // Limit results per query
+);
+```
+
+## Error Handling
+```typescript
+try {
+  const results = await client.batchSearch(...);
+} catch (error) {
+  if (error.message.includes('Network error')) {
+    // Server unreachable
+  } else if (error.message.includes('API Error')) {
+    // Server returned error
+  }
+}
+```
+
+## Common Patterns
+
+### Pattern 1: Search and Process Groups
+```typescript
+const results = await client.batchSearch(...);
+
+// Process each group separately
+for (const [hash, items] of Object.entries(results.grouped)) {
+  console.log(`Found ${items.length} results for query ${hash}`);
+  items.forEach(item => {
+    // Process each result
+  });
+}
+```
+
+### Pattern 2: Check if All Queries Had Results
+```typescript
+const results = await client.batchSearch(...);
+const stats = client.getSearchStats(results.grouped);
+
+if (stats.emptyGroups > 0) {
+  console.log(`${stats.emptyGroups} queries returned no results`);
+}
+```
+
+### Pattern 3: Generic Related Items Search
+```typescript
+// Generic method for any node-target relationship
+const items = await client.searchRelatedItems(
+  'inventory',
+  'warehouse',
+  'Warehouse-A',
+  'product_code',
+  ['PROD-001', 'PROD-002', 'PROD-003'],
+  ['product_code', 'quantity', 'location']
+);
+```
+
+## Response Metrics
+When `includeMetrics: true`:
+```typescript
+{
+  metrics: {
+    total_time_ms: 45,
+    search_time_ms: 30,
+    polars_time_ms: 10,
+    rows_examined: 1000,
+    rows_returned: 15,
+    client_elapsed_ms: 50
+  }
+}
+```
+
+## Best Practices
+1. Always search for multiple targets per node (batch efficiency)
+2. Use specific field projections to reduce payload size
+3. Set reasonable `resultsPerQuery` limits
+4. Use fuzzy search for user-facing searches
+5. Use exact search for ID/code lookups
+6. Handle empty groups gracefully
+7. Monitor metrics for performance optimization

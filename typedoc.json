@@ -12,6 +12,7 @@
   "categorizeByGroup": true,
   "navigationLinks": {
     "GitHub": "https://github.com/fondation-io/fast-db-batch-search-client",
-    "npm": "https://www.npmjs.com/package/@fondation-io/fast-db-batch-search-client"
+    "npm": "https://www.npmjs.com/package/@fondation-io/fast-db-batch-search-client",
+    "LLM Guide": "llm-guide.html"
   }
 }

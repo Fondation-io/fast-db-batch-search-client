@@ -1,0 +1,49 @@
+/* Custom styles for Fast-DB documentation */
+.tsd-navigation a[href="llm-guide.html"] {
+    background: #3498db;
+    color: white !important;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+
+.tsd-navigation a[href="llm-guide.html"]:hover {
+    background: #2980b9;
+    text-decoration: none;
+}
+
+/* Improve code block styling */
+pre {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+/* Add visual hierarchy */
+.tsd-panel h3 {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Highlight important sections */
+.tsd-comment .highlight {
+    background: #fff3cd;
+    padding: 10px;
+    border-left: 4px solid #ffc107;
+    margin: 15px 0;
+}
+
+/* Better spacing for navigation */
+.tsd-navigation {
+    line-height: 1.8;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .tsd-navigation a[href="llm-guide.html"] {
+        display: block;
+        margin: 10px 0;
+        text-align: center;
+    }
+}

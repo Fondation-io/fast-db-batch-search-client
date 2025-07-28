@@ -19,7 +19,7 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "example": "tsx examples/basic-usage.ts",
-    "docs": "typedoc --out docs src/index.ts",
+    "docs": "./scripts/build-docs.sh",
     "docs:watch": "typedoc --watch --out docs src/index.ts",
     "prepare": "husky"
   },

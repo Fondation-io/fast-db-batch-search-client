@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast-DB Batch Search Client - LLM Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 10px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        .example {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .method-signature {
+            background: #f0f7ff;
+            border: 1px solid #b8daff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .nav {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        .nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="index.html">API Documentation</a>
+            <a href="llm-guide.html">LLM Guide</a>
+            <a href="https://github.com/fondation-io/fast-db-batch-search-client">GitHub</a>
+        </div>
+
+        <h1>Fast-DB Batch Search Client - LLM Guide</h1>
+        
+        <div class="highlight">
+            <strong>Note:</strong> This guide is optimized for LLMs and AI assistants. It focuses on practical batch search examples with and without joins.
+        </div>
+
+        <h2>Overview</h2>
+        <p>Fast-DB Batch Search Client is a TypeScript library for performing efficient batch searches with fuzzy matching support. It allows searching for multiple target items related to a single node (e.g., multiple books by one author).</p>
+
+        <h2>Installation</h2>
+        <pre><code class="language-bash">npm install @fondation-io/fast-db-batch-search-client</code></pre>
+
+        <h2>Core Concepts</h2>
+        <ul>
+            <li><strong>Node</strong>: The common element (e.g., author, category, artist)</li>
+            <li><strong>Target</strong>: The items to search (e.g., book titles, product names, albums)</li>
+            <li><strong>Batch Search</strong>: Search multiple targets in one request</li>
+            <li><strong>Fuzzy Search</strong>: Find approximate matches using Levenshtein distance</li>
+        </ul>
+
+        <h2>Basic Usage - Batch Search Without Joins</h2>
+
+        <h3>Import and Initialize</h3>
+        <pre><code class="language-typescript">import { BatchSearchClient } from '@fondation-io/fast-db-batch-search-client';
+
+const client = new BatchSearchClient({
+  baseUrl: 'http://localhost:8080',
+  timeout: 30000,
+  includeMetrics: true
+});</code></pre>
+
+        <h3>Simple Batch Search</h3>
+        <p>Search for multiple books by one author:</p>
+        
+        <div class="example">
+            <pre><code class="language-typescript">const results = await client.batchSearch(
+  'books',                              // table name
+  'auteurs',                            // node field (author field)
+  'J.K. Rowling',                       // node value (single author)
+  'titre',                              // target field (title field)
+  [                                     // target values (multiple titles)
+    'Harry Potter école sorciers',
+    'Harry Potter chambre secrets',
+    'Harry Potter prisonnier Azkaban'
+  ],
+  ['titre', 'auteurs', 'annee'],        // fields to return
+  true,                                 // use fuzzy search
+  5                                     // max results per title
+);
+
+// Response structure
+{
+  results: [                            // Flat array of all results
+    {
+      search_group_hash: "hash1",
+      titre: "Harry Potter à l'école des sorciers",
+      auteurs: "J.K. Rowling",
+      annee: 1997
+    },
+    // ... more results
+  ],
+  grouped: {                            // Results grouped by search query
+    "hash1": [...],                     // Results for first title
+    "hash2": [...],                     // Results for second title
+    "hash3": [...]                      // Results for third title
+  },
+  totalResults: 15,
+  metrics: { /* performance data */ }
+}</code></pre>
+        </div>
+
+        <h3>Method Signature</h3>
+        <div class="method-signature">
+            <pre><code class="language-typescript">async batchSearch(
+  table: string,           // Table/collection name
+  nodeField: string,       // Field containing node (e.g., author)
+  nodeQuery: string,       // Single node value to search
+  targetField: string,     // Field containing targets (e.g., titles)
+  targetQueries: string[], // Array of target values to search
+  projection?: string[],   // Fields to return (default: ['*'])
+  fuzzy?: boolean,         // Use fuzzy search (default: true)
+  resultsPerQuery?: number // Max results per target (default: 10)
+)</code></pre>
+        </div>
+
+        <h3>Common Use Cases</h3>
+
+        <h4>Books by Author</h4>
+        <pre><code class="language-typescript">const books = await client.batchSearch(
+  'books',
+  'auteurs',
+  'Victor Hugo',
+  'titre', 
+  ['Les Misérables', 'Notre-Dame de Paris'],
+  ['titre', 'auteurs', 'annee', 'isbn']
+);</code></pre>
+
+        <h4>Products by Category</h4>
+        <pre><code class="language-typescript">const products = await client.batchSearch(
+  'products',
+  'category',
+  'Electronics',
+  'product_name',
+  ['iPhone 15', 'MacBook Pro', 'AirPods'],
+  ['product_name', 'price', 'brand', 'sku']
+);</code></pre>
+
+        <h4>Movies by Director</h4>
+        <pre><code class="language-typescript">const movies = await client.batchSearch(
+  'movies',
+  'director',
+  'Christopher Nolan',
+  'title',
+  ['Inception', 'Interstellar', 'Tenet'],
+  ['title', 'director', 'year', 'rating']
+);</code></pre>
+
+        <h2>Advanced Usage - Batch Search With Joins</h2>
+        <p>For data spread across multiple tables, use <code>batchSearchWithJoins</code>.</p>
+
+        <h3>Join Search Example</h3>
+        <p>Search for albums by artist across three related tables:</p>
+
+        <div class="example">
+            <pre><code class="language-typescript">const mozartAlbums = await client.batchSearchWithJoins({
+  // Tables to join
+  tables: ['id_artists', 'album_artist', 'albums'],
+  
+  // Join conditions
+  joins: [
+    {
+      $type: 'inner',
+      $left: 'id_artists',
+      $right: 'album_artist',
+      $on: ['id_artists.id', 'album_artist.artist_id']
+    },
+    {
+      $type: 'inner',
+      $left: 'album_artist',
+      $right: 'albums',
+      $on: ['album_artist.cb', 'albums.cb']
+    }
+  ],
+  
+  // Search parameters
+  nodeField: 'id_artists.artiste',        // Artist name field
+  nodeQuery: 'Mozart',                    // Artist to search
+  targetField: 'albums.album',            // Album title field
+  targetQueries: [                        // Albums to find
+    'Symphony No. 40',
+    'Symphony No. 41',
+    'Requiem'
+  ],
+  
+  // Field projection with aliases
+  projection: {
+    artist_name: 'artiste',
+    album_title: 'album',
+    release_year: 'street_date'
+  },
+  
+  fuzzy: true,
+  resultsPerQuery: 5,
+  orderBy: { release_year: -1 }
+});
+
+// Response has same structure but includes joined data</code></pre>
+        </div>
+
+        <h3>Join Types Supported</h3>
+        <ul>
+            <li><code>inner</code>: Return only matching records from both tables</li>
+            <li><code>left</code>: Return all from left table, matching from right</li>
+            <li><code>right</code>: Return all from right table, matching from left</li>
+            <li><code>full</code>: Return all records from both tables</li>
+        </ul>
+
+        <h3>Convenience Method for Albums</h3>
+        <pre><code class="language-typescript">const albums = await client.searchAlbumsByArtist(
+  'Beatles',
+  ['Abbey Road', 'Let It Be', 'Revolver'],
+  5
+);</code></pre>
+
+        <h2>Query Processing</h2>
+
+        <h3>Fuzzy Search Behavior</h3>
+        <ul>
+            <li>When <code>fuzzy: true</code>, searches use Levenshtein distance</li>
+            <li>Default distance threshold: 2</li>
+            <li>Matches partial strings and handles typos</li>
+        </ul>
+
+        <h3>Result Grouping</h3>
+        <ul>
+            <li>Each target query gets a unique <code>search_group_hash</code></li>
+            <li>Results are automatically grouped by this hash</li>
+            <li>Access flat results via <code>results</code> array</li>
+            <li>Access grouped results via <code>grouped</code> object</li>
+        </ul>
+
+        <h3>Performance Optimization</h3>
+        <pre><code class="language-typescript">// Optimize by selecting only needed fields
+const optimized = await client.batchSearch(
+  'large_table',
+  'category',
+  'Books',
+  'title',
+  ['Title1', 'Title2'],
+  ['title', 'price'],    // Only return 2 fields
+  true,
+  3                      // Limit results per query
+);</code></pre>
+
+        <h2>Error Handling</h2>
+        <pre><code class="language-typescript">try {
+  const results = await client.batchSearch(...);
+} catch (error) {
+  if (error.message.includes('Network error')) {
+    // Server unreachable
+  } else if (error.message.includes('API Error')) {
+    // Server returned error
+  }
+}</code></pre>
+
+        <h2>Common Patterns</h2>
+
+        <h3>Pattern 1: Search and Process Groups</h3>
+        <pre><code class="language-typescript">const results = await client.batchSearch(...);
+
+// Process each group separately
+for (const [hash, items] of Object.entries(results.grouped)) {
+  console.log(`Found ${items.length} results for query ${hash}`);
+  items.forEach(item => {
+    // Process each result
+  });
+}</code></pre>
+
+        <h3>Pattern 2: Check if All Queries Had Results</h3>
+        <pre><code class="language-typescript">const results = await client.batchSearch(...);
+const stats = client.getSearchStats(results.grouped);
+
+if (stats.emptyGroups > 0) {
+  console.log(`${stats.emptyGroups} queries returned no results`);
+}</code></pre>
+
+        <h3>Pattern 3: Generic Related Items Search</h3>
+        <pre><code class="language-typescript">// Generic method for any node-target relationship
+const items = await client.searchRelatedItems(
+  'inventory',
+  'warehouse',
+  'Warehouse-A',
+  'product_code',
+  ['PROD-001', 'PROD-002', 'PROD-003'],
+  ['product_code', 'quantity', 'location']
+);</code></pre>
+
+        <h2>Response Metrics</h2>
+        <p>When <code>includeMetrics: true</code>:</p>
+        <pre><code class="language-typescript">{
+  metrics: {
+    total_time_ms: 45,
+    search_time_ms: 30,
+    polars_time_ms: 10,
+    rows_examined: 1000,
+    rows_returned: 15,
+    client_elapsed_ms: 50
+  }
+}</code></pre>
+
+        <h2>Best Practices</h2>
+        <ol>
+            <li>Always search for multiple targets per node (batch efficiency)</li>
+            <li>Use specific field projections to reduce payload size</li>
+            <li>Set reasonable <code>resultsPerQuery</code> limits</li>
+            <li>Use fuzzy search for user-facing searches</li>
+            <li>Use exact search for ID/code lookups</li>
+            <li>Handle empty groups gracefully</li>
+            <li>Monitor metrics for performance optimization</li>
+        </ol>
+    </div>
+</body>
+</html>
