@@ -2,6 +2,12 @@
 
 ### Features
 
+- add support for multi-table joins in batch search queries ([0de5352](https://github.com/fondation-io/fast-db-batch-search-client/commit/0de5352ad76da8a4bbcf34cf3ef659f484a41357))
+
+# [3.1.0](https://github.com/fondation-io/fast-db-batch-search-client/compare/v3.0.0...v3.1.0) (2025-07-28)
+
+### Features
+
 - add support for multi-table joins in batch search queries
 - add `batchSearchWithJoins()` method for querying across related tables
 - add `searchAlbumsByArtist()` convenience method for music databases
