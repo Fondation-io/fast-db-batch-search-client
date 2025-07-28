@@ -166,7 +166,7 @@ const mozartAlbums = await client.batchSearchWithJoins({
   
   fuzzy: true,
   resultsPerQuery: 5,
-  orderBy: { release_year: -1 }
+  orderBy: { release_year: -1 }  // Sort by year descending
 });
 
 // Response has same structure but includes joined data
@@ -278,6 +278,97 @@ When `includeMetrics: true`:
     rows_returned: 15,
     client_elapsed_ms: 50
   }
+}
+```
+
+## Sort Syntax Reference
+
+Fast-DB supports flexible sorting with the `$orderBy` parameter in queries.
+
+### Single Column Sort
+```json
+{
+  "$from": "books",
+  "$select": ["title", "year"],
+  "$orderBy": {"year": -1}
+}
+```
+
+### Multiple Columns Sort
+```json
+{
+  "$from": "books", 
+  "$select": ["title", "author", "year"],
+  "$orderBy": [
+    {"field": "author", "direction": "asc"},
+    {"field": "year", "direction": "desc"}
+  ]
+}
+```
+
+### Sort Direction Options
+- **Ascending**: `1`, `"asc"`, `"ascending"`
+- **Descending**: `-1`, `"desc"`, `"descending"`
+
+### Sort by Score (Search Results)
+For search queries, sort by relevance score:
+```json
+{
+  "$from": "books",
+  "$where": {
+    "$fuzzy": {
+      "$text": "Harry Potter",
+      "$fields": ["title"],
+      "$distance": 2
+    }
+  },
+  "$orderBy": {"$score": -1}
+}
+```
+
+**Score field names recognized:**
+- `"$score"`
+- `"_score"`  
+- `"score"`
+- `"scoring"`
+
+### Object vs Array Format
+
+**Object format** (simple cases):
+```json
+{"$orderBy": {"year": -1, "title": 1}}
+```
+
+**Array format** (explicit order):
+```json
+{
+  "$orderBy": [
+    {"field": "year", "direction": "desc"},
+    {"field": "title", "direction": "asc"}
+  ]
+}
+```
+
+### String shorthand:
+```json
+{"$orderBy": "title"}  // Sorts by title ascending
+```
+
+### Examples with Joins
+```json
+{
+  "$from": ["albums", "artists"],
+  "$join": [{
+    "$type": "inner",
+    "$left": "albums",
+    "$right": "artists", 
+    "$on": ["albums.artist_id", "artists.id"]
+  }],
+  "$select": ["albums.title", "artists.name", "albums.year"],
+  "$orderBy": [
+    {"field": "artists.name", "direction": "asc"},
+    {"field": "albums.year", "direction": "desc"}
+  ]
 }
 ```
 
